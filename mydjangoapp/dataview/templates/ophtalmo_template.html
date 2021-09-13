@@ -1,0 +1,202 @@
+
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Visualisation Ophtalmos 2012 UFC Que Choisir</title>
+        <!-- Javascript -->
+        <script   src="http://code.jquery.com/jquery-3.1.1.min.js"   integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="   crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <!-- Le styles -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+        <!--[if lt IE 9]>
+        <script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+    </head>
+    <body>
+        <div id="Title"><h1 class="text-center">Donnees Ophtalmo 2012</h1></div>
+        <div id="legend_container" style="margin-left:200px;">
+        </div>
+        <div class="container" style="height:2200px;">
+          <canvas id="ophtalmo_chart"></canvas>
+        </div>
+        <div class="container">
+            <table class="table table-striped table-bordered sortable">
+                <tr>
+                    <th>Villes</th>
+                    <th>Temps d'attente</th>
+                </tr>
+                {% for key, value in city_times.items %}
+                <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        <div id="result" class="container">
+        </div>
+        {% block javascript %}
+
+        <SCRIPT type="text/javascript">
+        {% autoescape off %}
+            const labels = {{ cities_str }};
+            const data = {
+      labels: labels,
+          datasets: [{
+            label: 'Attente Ophtalmologistes France 2012',
+            backgroundColor: {{ colors_sorted_str }},
+            borderColor: 'rgb(255, 99, 132)',
+            data: {{ times_sorted_str }},
+          }]
+      };
+      const legend_data = {
+        labels: ['< 7 jours', '< 14 jours', '< 30 jours', '< 60 jours', '< 180 jours', ' > 180 jours'],
+        datasets: [
+            {
+              label: '< 7 jours',
+              borderColor: {{ colors_sorted.0 }},
+              fill: false,
+            },
+            {
+              label: '< 14 jours',
+              borderColor: {{ colors_sorted.1 }},
+              fill: false,
+            },
+            {
+              label: '< 30 jours',
+              borderColor: {{ colors_sorted.2 }},
+              fill: false,
+            },
+            {
+              label: '< 60 jours',
+              borderColor: {{ colors_sorted.3 }},
+              fill: false,
+            },
+            {
+              label: '< 180 jours',
+              borderColor: {{ colors_sorted.4 }},
+              fill: false,
+            },
+            {
+              label: '> 180 jours',
+              borderColor: {{ colors_sorted.5 }},
+              fill: false,
+            },
+          ],
+        };
+      //////////////
+      const getOrCreateLegendList = (chart, id) => {
+  const legendContainer = document.getElementById(id);
+  let listContainer = legendContainer.querySelector('ul');
+
+  if (!listContainer) {
+    listContainer = document.createElement('ul');
+    listContainer.style.display = 'flex';
+    listContainer.style.flexDirection = 'row';
+    listContainer.style.margin = 0;
+    listContainer.style.padding = 0;
+
+    legendContainer.appendChild(listContainer);
+  }
+
+  return listContainer;
+};
+
+const htmlLegendPlugin = {
+  id: 'htmlLegend',
+  afterUpdate(chart, args, options) {
+    const ul = getOrCreateLegendList(chart, options.containerID);
+
+    // Remove old legend items
+    while (ul.firstChild) {
+      ul.firstChild.remove();
+    }
+
+    // Reuse the built-in legendItems generator
+    const items = chart.options.plugins.legend.labels.generateLabels(chart);
+    const item = items[0];
+    var li = null;
+    var textContainer = null;
+    var boxSpan = null;
+    var text = null;
+    {% for color in legend_colors %}
+      li = document.createElement('li');
+      li.style.alignItems = 'center';
+      li.style.cursor = 'pointer';
+      li.style.display = 'flex';
+      li.style.flexDirection = 'row';
+      li.style.marginLeft = '10px';
+
+      // Color box
+      boxSpan = document.createElement('span');
+      boxSpan.style.background = '{{ color }}';
+      boxSpan.style.borderColor = '{{ color }}';
+      boxSpan.style.borderWidth =  '1px';
+      boxSpan.style.display = 'inline-block';
+      boxSpan.style.height = '20px';
+      boxSpan.style.marginRight = '10px';
+      boxSpan.style.width = '20px';
+
+      // Text
+      textContainer = document.createElement('p');
+      textContainer.style.color = item.fontColor;
+      textContainer.style.margin = 0;
+      textContainer.style.padding = 0;
+      textContainer.style.textDecoration = item.hidden ? 'line-through' : '';
+
+      text = document.createTextNode('{{ legend_reversed.pop }}');
+      textContainer.appendChild(text);
+
+      li.appendChild(boxSpan);
+      li.appendChild(textContainer);
+      ul.appendChild(li);
+      {% endfor %}
+  }
+};
+      /////////////
+      {% endautoescape %}
+      const config = {
+          type: 'bar',
+          data,
+          options: {
+            indexAxis: 'y',
+            maintainAspectRatio: false,
+            scaleShowValues: true,
+            scales: {
+              yAxes: [{
+                ticks: {
+                  autoSkip: false
+                }
+              }]
+            },
+            tooltips: {
+                callbacks: {
+                  label: (item) => `${item.yLabel} jours`,
+                },
+            },
+            plugins: {
+              htmlLegend: {
+                // ID of the container to put the legend in
+                containerID: 'legend_container',
+              },
+              legend: {
+                display: false,
+              }
+            },
+          },
+          plugins: [htmlLegendPlugin],
+      };
+      var myChart = new Chart(
+        document.getElementById('ophtalmo_chart'),
+        config
+      );
+
+            </SCRIPT>
+
+        {% endblock %}
+    </body>
+
+
+</html>
